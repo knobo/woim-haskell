@@ -47,23 +47,34 @@ buildTree n xxs@((level,x):xs)
 
 printTabs n = putStr $ replicate n '\t'
 
-printTree :: Int -> [Woim String] -> IO()
+printTree :: Int -> [Woim (WoimItem String)] -> IO()
 printTree n [] = putStr ""
-printTree n ((Woim txt sub):rest) = do 
+printTree n ((Woim (WoimLine txt) sub):rest) = do 
         printTabs n
         putStrLn txt
         printTree (n + 1) sub
         printTree n rest
+
+printTree n ((Woim (WoimMultiLine (x:xs)) sub):rest) = do 
+        printTabs n
+        putStrLn x
+        printMultiLineList n xs
+        printTree (n + 1) sub
+        printTree n rest
+
+printMultiLineList n [] = putStr "";
+printMultiLineList n (x:xs) = 
+     do printTabs n
+        putStr "  "
+        putStrLn x
+        printMultiLineList n xs
 
 getTree :: (Token a, [Woim a]) -> [Woim a]
 getTree (_,woim) = woim
 
 main = do 
   woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
-  let foo = parseLines $ splitAll woimLines in
-      print $ buildTree (-1) foo
-  
---  printTree 0 $ getTree $ buildTree (-1) $ parseLines $ splitAll woimLines
---  printTree 0 $ getTree $ buildTree (-1) $ multiLines $ splitAll woimLines
+  let tokens = parseLines $ splitAll woimLines in
+      printTree 0 $ getTree $ buildTree (-1) tokens
 
 
