@@ -3,6 +3,7 @@ import IO
 import Control.Monad
 
 -- the woim data type:
+data WoimItem a = WoimMultiLine [a] | WoimLine a | WoimOperator a | WoimState a deriving (Eq, Show, Read)
 data Woim a = Woim a [Woim a] deriving (Eq, Show, Read)
 
 -- Splits a woim line in to (indentation, text)
@@ -12,30 +13,27 @@ split n xs        = (n, xs)
 
 splitAll z = [ split 0 y | y <- z ]
 
--- For multi lines, I have changed the rules to be 
--- Next line (line n) is indented with two spaces, then multiline
--- until indentation is not eqlual to (line n) + two spaces any more.
-multiLines :: [(Integer, [a])] -> [(Integer,[a])]
-multiLines [] = []
-multiLines ((n, xs):ys) 
-     | ismLine n ys = let (accumulated, rest) = collectMulti (n + 2) ys
-                      in  (n,(xs ++ accumulated)) : multiLines rest
-     | otherwise    = (n,xs) : multiLines ys
-
 -- Checks if indentation level = +2
 ismLine n [] = False
 ismLine n ((na, xs):ys) = na == n + 2
 
+parseLines :: [(Integer, [a])] -> [(Integer, WoimItem [a])]
+parseLines [] = []
+parseLines ((n, xs):ys) 
+     | ismLine n ys = let (accumulated, rest) = parseMultiLines (n + 2) ys
+                      in  (n, WoimMultiLine  (xs:accumulated)) : parseLines rest
+     | otherwise    = (n, WoimLine xs) : parseLines ys
+
+
 -- When multiline occurs, collect all lines on that level.
-collectMulti :: Integer -> [(Integer, [a])] -> ([a], [(Integer, [a])])
-collectMulti n [] = ([],[])
-collectMulti n t@((nx, xs):ys) 
-    | nx == n   = let (txt, rest) = collectMulti nx ys
-                  in (xs ++ txt, rest)
+parseMultiLines :: Integer -> [(Integer, [a])] -> ([[a]], [(Integer, [a])])
+parseMultiLines n [] = ([],[])
+parseMultiLines n t@((nx, xs):ys) 
+    | nx == n   = let (txt, rest) = parseMultiLines nx ys
+                  in ((xs:txt), rest)
     | otherwise = ([], t)
 
-
-type Token a = [(Integer,a)]
+type Token a = [(Integer, a)]
 -- thanx to |Jedai| on irc.freenode.org 
 -- for helping, debuging and cleaning up this one
 -- Nice working with you :)
@@ -62,6 +60,10 @@ getTree (_,woim) = woim
 
 main = do 
   woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
-  printTree 0 $ getTree $ buildTree (-1) $ multiLines $ splitAll woimLines
+  let foo = parseLines $ splitAll woimLines in
+      print $ buildTree (-1) foo
+  
+--  printTree 0 $ getTree $ buildTree (-1) $ parseLines $ splitAll woimLines
+--  printTree 0 $ getTree $ buildTree (-1) $ multiLines $ splitAll woimLines
 
 
