@@ -6,6 +6,11 @@ This is a project I'm doing to learn Haskell. I made a rough draft in
 Lisp before I started with Haskell. Lisp version is available here:
 http://github.com/knobo/woim-lisp
 
+Changes in the format:
+For now I have made one change in the format. Instead of inerpreting *
+as an indicator of multiline items, I assumes that it is a multiline
+item if the next line is indentet with two spaces more.
+
 TODO: 
 
 * See if I can simplify buildTree with a (the) state monad I read
