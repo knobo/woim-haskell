@@ -1,0 +1,21 @@
+
+
+This is a project I'm doing to learn Haskell. I made a rough draft in
+Lisp before I started with Haskell. Lisp version is available here:
+http://github.com/knobo/woim-lisp
+
+TODO: 
+
+* See if I can simplify buildTree with a (the) state monad I read
+  about in "Yet Another Haskell Introduction"
+
+* Make new WoimItemTypes and parse every woim line in to correct type.
+
+* Produce some "useful" output, like json, dot, or xml.
+
+Credits:
+
+Thanks to |Jedai| on irc.freenode.org for helping me with the
+buildTree function. Which was the most difficult function as I had to
+introduce my own state variable to use in the recursion.
+
