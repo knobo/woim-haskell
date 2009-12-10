@@ -3,8 +3,8 @@ import IO
 import Control.Monad
 
 -- the woim data type:
-data WoimItem a = WoimMultiLine [a] | WoimLine a | WoimOperator a | WoimState a deriving (Eq, Show, Read)
-data Woim a = Woim a [Woim a] deriving (Eq, Show, Read)
+data WoimItem = WoimMultiLine [String] | WoimLine String | WoimOperator String | WoimState String deriving (Eq, Show, Read)
+data Woim = Woim WoimItem [Woim] deriving (Eq, Show, Read)
 
 -- Splits a woim line in to (indentation, text)
 split n ('\t':xs) = split (8 + n) xs
@@ -17,13 +17,12 @@ splitAll z = [ split 0 y | y <- z ]
 ismLine n [] = False
 ismLine n ((na, xs):ys) = na == n + 2
 
-parseLines :: [(Integer, [a])] -> [(Integer, WoimItem [a])]
+parseLines :: [(Integer, String)] -> [(Integer, WoimItem)]
 parseLines [] = []
 parseLines ((n, xs):ys) 
      | ismLine n ys = let (accumulated, rest) = parseMultiLines (n + 2) ys
                       in  (n, WoimMultiLine  (xs:accumulated)) : parseLines rest
      | otherwise    = (n, WoimLine xs) : parseLines ys
-
 
 -- When multiline occurs, collect all lines on that level.
 parseMultiLines :: Integer -> [(Integer, [a])] -> ([[a]], [(Integer, [a])])
@@ -33,11 +32,11 @@ parseMultiLines n t@((nx, xs):ys)
                   in ((xs:txt), rest)
     | otherwise = ([], t)
 
-type Token a = [(Integer, a)]
+type Token = [(Integer, WoimItem)]
 -- thanx to |Jedai| on irc.freenode.org 
 -- for helping, debuging and cleaning up this one
 -- Nice working with you :)
-buildTree :: Integer -> Token a -> (Token a, [Woim a])
+buildTree :: Integer -> Token -> (Token, [Woim])
 buildTree _ [] = ([],[])
 buildTree n xxs@((level,x):xs)
     | level < n  = (xxs, [])
@@ -47,7 +46,7 @@ buildTree n xxs@((level,x):xs)
 
 printTabs n = putStr $ replicate n '\t'
 
-printTree :: Int -> [Woim (WoimItem String)] -> IO()
+printTree :: Int -> [Woim] -> IO()
 printTree n [] = putStr ""
 printTree n ((Woim (WoimLine txt) sub):rest) = do 
         printTabs n
@@ -69,7 +68,7 @@ printMultiLineList n (x:xs) =
         putStrLn x
         printMultiLineList n xs
 
-getTree :: (Token a, [Woim a]) -> [Woim a]
+getTree :: (Token, [Woim]) -> [Woim]
 getTree (_,woim) = woim
 
 main = do 
