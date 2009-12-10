@@ -6,7 +6,11 @@ import Control.Monad
 data WoimItem = WoimMultiLine [String] | WoimLine String | WoimOperator String | WoimState String deriving (Eq, Show, Read)
 data Woim = Woim WoimItem [Woim] deriving (Eq, Show, Read)
 
+type Token a = (Integer, a)
+type Tokens a = [Token a]
+
 -- Splits a woim line in to (indentation, text)
+split :: Integer -> String -> Token String
 split n ('\t':xs) = split (8 + n) xs
 split n (' ':xs)  = split (1 + n) xs
 split n xs        = (n, xs)
@@ -17,7 +21,7 @@ splitAll z = [ split 0 y | y <- z ]
 ismLine n [] = False
 ismLine n ((na, xs):ys) = na == n + 2
 
-parseLines :: [(Integer, String)] -> [(Integer, WoimItem)]
+parseLines :: Tokens String -> Tokens WoimItem
 parseLines [] = []
 parseLines ((n, xs):ys) 
      | ismLine n ys = let (accumulated, rest) = parseMultiLines (n + 2) ys
@@ -25,23 +29,19 @@ parseLines ((n, xs):ys)
      | otherwise    = (n, WoimLine xs) : parseLines ys
 
 -- When multiline occurs, collect all lines on that level.
-parseMultiLines :: Integer -> [(Integer, [a])] -> ([[a]], [(Integer, [a])])
+parseMultiLines :: Integer -> Tokens String -> ([String], Tokens String)
 parseMultiLines n [] = ([],[])
 parseMultiLines n t@((nx, xs):ys) 
     | nx == n   = let (txt, rest) = parseMultiLines nx ys
                   in ((xs:txt), rest)
     | otherwise = ([], t)
 
-type Token = [(Integer, WoimItem)]
--- thanx to |Jedai| on irc.freenode.org 
--- for helping, debuging and cleaning up this one
--- Nice working with you :)
-buildTree :: Integer -> Token -> (Token, [Woim])
+buildTree :: Integer -> Tokens WoimItem -> (Tokens WoimItem, [Woim])
 buildTree _ [] = ([],[])
 buildTree n xxs@((level,x):xs)
     | level < n  = (xxs, [])
-    | otherwise  = let (besides, children) = buildTree (level+8) xs        -- do we have children? if no level < n
-                       (uncles, siblings)  = buildTree level besides       -- get my (level,x) brothers
+    | otherwise  = let (besides, children) = buildTree (level+8) xs       -- do we have children? if no level < n
+                       (uncles, siblings)  = buildTree level besides      -- get my (level,x) brothers
                    in (uncles, Woim x children : siblings)
 
 printTabs n = putStr $ replicate n '\t'
@@ -68,7 +68,7 @@ printMultiLineList n (x:xs) =
         putStrLn x
         printMultiLineList n xs
 
-getTree :: (Token, [Woim]) -> [Woim]
+getTree :: (Tokens WoimItem, [Woim]) -> [Woim]
 getTree (_,woim) = woim
 
 main = do 
