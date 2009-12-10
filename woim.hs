@@ -4,8 +4,9 @@ import Control.Monad
 
 -- the woim data type:
 data WoimItem = WoimMultiLine [String] | WoimLine String | WoimOperator String | WoimState String deriving (Eq, Show, Read)
-data Woim = Woim WoimItem [Woim] deriving (Eq, Show, Read)
+data Woim = Woim WoimItem WoimList deriving (Eq, Show, Read)
 
+type WoimList = [Woim]           -- Maybe this one is overkill?
 type Token a = (Integer, a)
 type Tokens a = [Token a]
 
@@ -17,7 +18,7 @@ split n xs        = (n, xs)
 
 splitAll z = [ split 0 y | y <- z ]
 
--- Checks if indentation level = +2
+-- Checks if indentation level = +2, which gives multi line item
 ismLine n [] = False
 ismLine n ((na, xs):ys) = na == n + 2
 
@@ -36,7 +37,7 @@ parseMultiLines n t@((nx, xs):ys)
                   in ((xs:txt), rest)
     | otherwise = ([], t)
 
-buildTree :: Integer -> Tokens WoimItem -> (Tokens WoimItem, [Woim])
+buildTree :: Integer -> Tokens WoimItem -> (Tokens WoimItem, WoimList)
 buildTree _ [] = ([],[])
 buildTree n xxs@((level,x):xs)
     | level < n  = (xxs, [])
@@ -46,14 +47,13 @@ buildTree n xxs@((level,x):xs)
 
 printTabs n = putStr $ replicate n '\t'
 
-printTree :: Int -> [Woim] -> IO()
+printTree :: Int -> WoimList -> IO()
 printTree n [] = putStr ""
 printTree n ((Woim (WoimLine txt) sub):rest) = do 
         printTabs n
         putStrLn txt
         printTree (n + 1) sub
         printTree n rest
-
 printTree n ((Woim (WoimMultiLine (x:xs)) sub):rest) = do 
         printTabs n
         putStrLn x
@@ -61,6 +61,7 @@ printTree n ((Woim (WoimMultiLine (x:xs)) sub):rest) = do
         printTree (n + 1) sub
         printTree n rest
 
+printMultiLineList :: Int -> [String] -> IO()
 printMultiLineList n [] = putStr "";
 printMultiLineList n (x:xs) = 
      do printTabs n
@@ -68,7 +69,7 @@ printMultiLineList n (x:xs) =
         putStrLn x
         printMultiLineList n xs
 
-getTree :: (Tokens WoimItem, [Woim]) -> [Woim]
+getTree :: (Tokens WoimItem, WoimList) -> WoimList
 getTree (_,woim) = woim
 
 main = do 
