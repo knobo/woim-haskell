@@ -20,6 +20,7 @@ splitAll :: [String] -> Tokens String
 splitAll z = [ split 0 y | y <- z ]
 
 -- Checks if indentation level = +2, which gives multi line item
+ismLine :: Integer -> Tokens a -> Bool
 ismLine n [] = False
 ismLine n ((na, xs):ys) = na == n + 2
 
