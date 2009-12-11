@@ -16,6 +16,7 @@ split n ('\t':xs) = split (8 + n) xs
 split n (' ':xs)  = split (1 + n) xs
 split n xs        = (n, xs)
 
+splitAll :: [String] -> Tokens String
 splitAll z = [ split 0 y | y <- z ]
 
 -- Checks if indentation level = +2, which gives multi line item
