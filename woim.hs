@@ -26,10 +26,10 @@ ismLine n ((na, xs):ys) = na == n + 2
 
 parseLines :: Tokens String -> Tokens WoimItem
 parseLines [] = []
-parseLines ((n, xs):ys) 
+parseLines ((n, string):ys) 
   | ismLine n ys = let (accumulated, rest) = parseMultiLines (n + 2) ys
-                   in  (n, WoimMultiLine  (xs:accumulated)) : parseLines rest
-  | otherwise    = (n, WoimLine xs) : parseLines ys
+                   in  (n, WoimMultiLine  (string:accumulated)) : parseLines rest
+  | otherwise    = (n, WoimLine string) : parseLines ys
 
 -- When multiline occurs, collect all lines on that level.
 parseMultiLines :: Integer -> Tokens String -> ([String], Tokens String)
@@ -87,19 +87,23 @@ printBackPointer (x:xs) =
   do mapM_ putStr [xs, " -> ", (x:xs), ";\n" ]
 
 labelFormat (WoimMultiLine []) = []
+labelFormat (WoimMultiLine (x:[])) = do 
+  quoteLabel x 
 labelFormat (WoimMultiLine (x:xs)) = do 
-  quoteLabel x ++ labelFormat (WoimMultiLine xs)
+  quoteLabel x ++ "\\n" ++ labelFormat (WoimMultiLine xs)
+
+
 labelFormat (WoimLine x) = do 
   quoteLabel x
 
 quoteLabel :: String -> String
 quoteLabel [] = []
-quoteLabel (x:xs) = do
-  (case x of
-    '\"'      ->  "\\\""
-    '\\'      ->  "\\"
-    '\n'      ->  "\\n"
-    otherwise ->  [x])  ++  quoteLabel xs
+quoteLabel string = do x <- string
+                       (case x of
+                           '\"'      ->  "\\\""
+                           '\\'      ->  "\\"
+                           '\n'      ->  "\\n"
+                           otherwise ->  [x])  
 
 printDotItems :: String -> WoimList -> IO()
 printDotItems _ [] = return ()
