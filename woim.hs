@@ -48,30 +48,6 @@ buildTree n xxs@((level,x):xs)
                      (uncles, siblings)  = buildTree level besides      -- get my (level,x) brothers
                  in (uncles, Woim x children : siblings)
 
-printTabs n = putStr $ replicate n '\t'
-
-printTree :: Int -> WoimList -> IO()
-printTree n [] = return ()
-printTree n ((Woim (WoimLine txt) children):siblings) = do 
-  printTabs n
-  putStrLn txt
-  printTree (n + 1) children
-  printTree n siblings
-printTree n ((Woim (WoimMultiLine (x:xs)) children):siblings) = do 
-  printTabs n
-  putStrLn x                             -- First line as normal
-  printMultiLineList n xs                -- Rest with +2 spaces
-  printTree (n + 1) children
-  printTree n siblings
-
-printMultiLineList :: Int -> [String] -> IO()
-printMultiLineList n [] = return ()
-printMultiLineList n (x:xs) = do 
-  printTabs n
-  putStr "  "
-  putStrLn x
-  printMultiLineList n xs
-
 getTree :: (Tokens WoimItem, WoimList) -> WoimList
 getTree = snd
 
