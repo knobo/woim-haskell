@@ -48,9 +48,6 @@ buildTree n xxs@((level,x):xs)
                      (uncles, siblings)  = buildTree level besides      -- get my (level,x) brothers
                  in (uncles, Woim x children : siblings)
 
-getTree :: (Tokens WoimItem, WoimList) -> WoimList
-getTree = snd
-
 labelFormat (WoimMultiLine [])     = []
 labelFormat (WoimMultiLine (x:[])) = quoteLabel x 
 labelFormat (WoimMultiLine (x:xs)) = quoteLabel x ++ "\\n" ++ labelFormat (WoimMultiLine xs)
@@ -87,8 +84,9 @@ dot woim = do
 
 main = do 
   woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
-  let tokens = parseLines $ splitAll woimLines 
-  let (_,out) = runWriter $ dot $ getTree $ buildTree (-1) tokens
+  let tokens   = parseLines $ splitAll woimLines 
+  let (_,tree) = buildTree (-1) tokens
+  let (_,out)  = runWriter $ dot tree
       in putStr out 
 
 withFile :: FilePath -> IOMode -> ( Handle -> IO a ) -> IO a
