@@ -1,6 +1,7 @@
 module Main where
 import IO
 import Control.Monad
+import Control.Monad.Writer
 
 -- the woim data type:
 data WoimItem = WoimMultiLine [String] | WoimLine String | WoimOperator String | WoimState String deriving (Eq, Show, Read)
@@ -65,36 +66,19 @@ printTree n ((Woim (WoimMultiLine (x:xs)) children):siblings) = do
 
 printMultiLineList :: Int -> [String] -> IO()
 printMultiLineList n [] = return ()
-printMultiLineList n (x:xs) = 
-  do printTabs n
-     putStr "  "
-     putStrLn x
-     printMultiLineList n xs
+printMultiLineList n (x:xs) = do 
+  printTabs n
+  putStr "  "
+  putStrLn x
+  printMultiLineList n xs
 
 getTree :: (Tokens WoimItem, WoimList) -> WoimList
 getTree = snd
 
-main = do 
-  woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
-  let tokens = parseLines $ splitAll woimLines 
-    in printDot $ getTree $ buildTree (-1) tokens
- -- printTree 0 $ getTree $ buildTree (-1) tokens
-
-printBackPointer :: String -> IO()
-printBackPointer [] = return ()
-printBackPointer (x:[]) = return ()
-printBackPointer (x:xs) = 
-  do mapM_ putStr [xs, " -> ", (x:xs), ";\n" ]
-
-labelFormat (WoimMultiLine []) = []
-labelFormat (WoimMultiLine (x:[])) = do 
-  quoteLabel x 
-labelFormat (WoimMultiLine (x:xs)) = do 
-  quoteLabel x ++ "\\n" ++ labelFormat (WoimMultiLine xs)
-
-
-labelFormat (WoimLine x) = do 
-  quoteLabel x
+labelFormat (WoimMultiLine [])     = []
+labelFormat (WoimMultiLine (x:[])) = quoteLabel x 
+labelFormat (WoimMultiLine (x:xs)) = quoteLabel x ++ "\\n" ++ labelFormat (WoimMultiLine xs)
+labelFormat (WoimLine x)           = quoteLabel x
 
 quoteLabel :: String -> String
 quoteLabel [] = []
@@ -105,19 +89,31 @@ quoteLabel string = do x <- string
                            '\n'      ->  "\\n"
                            otherwise ->  [x])  
 
-printDotItems :: String -> WoimList -> IO()
-printDotItems _ [] = return ()
-printDotItems id@(i:is) woimlist@((Woim x children):siblings) = 
-  do mapM_ putStr [id, " [label=\"", labelFormat x, "\"];\n"]
-     printBackPointer id
-     head [ printDotItems (newid:id) children | newid <- ['a'..] ]
-     printDotItems ((succ i):is) siblings
+backPointer :: String -> String
+backPointer []     = ""
+backPointer (x:[]) = ""
+backPointer (x:xs) = xs ++ " -> " ++ (x:xs) ++ ";\n" 
 
-printDot :: WoimList -> IO()
-printDot woim = do
-  putStrLn "digraph G {"
-  head [ printDotItems [id] woim | id <- ['a'..] ]
-  putStrLn "}"
+dotItems :: String -> WoimList -> Writer String String
+dotItems _ [] = return ""
+dotItems id@(i:is) ((Woim item children):siblings) = do 
+  tell (id ++ " [label=\"" ++ labelFormat item ++ "\"];\n")
+  tell $ backPointer id
+  dotItems ('a':id) children
+  dotItems ((succ i):is) siblings
+
+dot :: WoimList -> Writer String String
+dot woim = do
+  tell "digraph G {\n"
+  dotItems "a" woim
+  tell "}\n"
+  return ""
+
+main = do 
+  woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
+  let tokens = parseLines $ splitAll woimLines 
+  let (_,out) = runWriter $ dot $ getTree $ buildTree (-1) tokens
+      in putStr out 
 
 withFile :: FilePath -> IOMode -> ( Handle -> IO a ) -> IO a
 withFile path mode f = do
@@ -125,4 +121,3 @@ withFile path mode f = do
   result <- f handle
   hClose handle
   return result
-
