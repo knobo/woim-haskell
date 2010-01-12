@@ -88,9 +88,6 @@ chNextId id = ('a':id)
 
 siNextId :: String -> String 
 siNextId id@(i:is) = ((succ i):is)
--- ----------------------------------- --
--- End of formating dots. for GraphViz --
--- ----------------------------------- --
 
 dot :: WoimList -> Writer String ()
 dot woim = do
@@ -99,9 +96,15 @@ dot woim = do
   tell "}\n"
   return ()
 
+-- ----------------------------------- --
+-- End of formating dots. for GraphViz --
+-- ----------------------------------- --
+
 flatten :: WoimList -> Writer String ()
 flatten tree = do 
-  toList 0 tree (\x y -> do tell ((replicate y '\t') ++  (labelFormat x) ++ "\n"); return ()) succ id -- This is not done..
+  toList 0 tree 
+    (\x y -> do tell ((replicate y '\t') ++  (labelFormat x) ++ "\n"); return ()) -- This is not done..
+    succ id
   return ()
          
 parseFile :: (WoimList -> Writer String ()) -> IO ()
