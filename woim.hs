@@ -48,8 +48,18 @@ buildTree n xxs@((level,x):xs)
                      (uncles, siblings)  = buildTree level besides      -- get my (level,x) brothers
                  in (uncles, Woim x children : siblings)
 
+toList :: a -> WoimList -> (WoimItem -> a -> Writer String ()) -> (a -> a) -> (a -> a) -> Writer String ()
+toList _ [] _ _ _ = return ()
+toList id ((Woim item children):siblings) format childrenId siblingId = do 
+  format item id 
+  toList (childrenId id) children format childrenId siblingId
+  toList (siblingId id) siblings format childrenId siblingId
+
+-- ------------------------------- --
+-- Format dots......  for GraphViz --
+-- ------------------------------- --
 labelFormat (WoimMultiLine [])     = []
-labelFormat (WoimMultiLine (x:[])) = quoteLabel x 
+labelFormat (WoimMultiLine (x:[])) = quoteLabel x
 labelFormat (WoimMultiLine (x:xs)) = quoteLabel x ++ "\\n" ++ labelFormat (WoimMultiLine xs)
 labelFormat (WoimLine x)           = quoteLabel x
 
@@ -67,27 +77,44 @@ backPointer []     = ""
 backPointer (x:[]) = ""
 backPointer (x:xs) = xs ++ " -> " ++ (x:xs) ++ ";\n" 
 
-dotItems :: String -> WoimList -> Writer String String
-dotItems _ [] = return ""
-dotItems id@(i:is) ((Woim item children):siblings) = do 
+formatDot :: WoimItem -> String -> Writer String ()
+formatDot item id = do
   tell (id ++ " [label=\"" ++ labelFormat item ++ "\"];\n")
   tell $ backPointer id
-  dotItems ('a':id) children
-  dotItems ((succ i):is) siblings
+  return ()
+  
+chNextId :: String -> String
+chNextId id = ('a':id)
 
-dot :: WoimList -> Writer String String
+siNextId :: String -> String 
+siNextId id@(i:is) = ((succ i):is)
+-- ----------------------------------- --
+-- End of formating dots. for GraphViz --
+-- ----------------------------------- --
+
+dot :: WoimList -> Writer String ()
 dot woim = do
   tell "digraph G {\n"
-  dotItems "a" woim
+  toList "a" woim formatDot chNextId siNextId
   tell "}\n"
-  return ""
+  return ()
 
-main = do 
+flatten :: WoimList -> Writer String ()
+flatten tree = do 
+  toList 0 tree (\x y -> do tell ((replicate y '\t') ++  (labelFormat x) ++ "\n"); return ()) succ id -- This is not done..
+  return ()
+         
+parseFile :: (WoimList -> Writer String ()) -> IO ()
+parseFile p = do   
   woimLines <- lines `liftM` readFile "/home/knobo/prog/haskell/woim/woim.woim"
   let tokens   = parseLines $ splitAll woimLines 
   let (_,tree) = buildTree (-1) tokens
-  let (_,out)  = runWriter $ dot tree
-      in putStr out 
+  let (_,out)  = runWriter $ p tree
+    in putStr out
+       
+main :: IO ()       
+main = do 
+  parseFile dot 
 
 withFile :: FilePath -> IOMode -> ( Handle -> IO a ) -> IO a
 withFile path mode f = do
