@@ -1,20 +1,24 @@
-
 Information about WOIM can be found here:
 http://www.isene.com/artweb.cgi?article=012-woim.txt
+
+UPDATE: 2010-09-28
+New version written with parsec. Parses the original woim format better,
+and is much easier to extend, in order to parse the whole format. Still
+parts are missing.
 
 This is a project I'm doing to learn Haskell. I made a rough draft in
 Lisp before I started with Haskell. Lisp version is available here:
 http://github.com/knobo/woim-lisp
 
+
 Changes in the format:
 For now I have made one change in the format. Instead of inerpreting *
 as an indicator of multiline items, I assumes that it is a multiline
 item if the next line is indentet with two spaces more.
+NOTE: This is only true for the non-parsec version. The parsec version
+can parse everything the right way.
 
 TODO: 
-
-* See if I can simplify buildTree with a (the) state monad I read
-  about in "Yet Another Haskell Introduction"
 
 * Make new WoimItemTypes and parse every woim line in to correct type.
 
@@ -22,7 +26,9 @@ TODO:
 
 Credits:
 
-Thanks to |Jedai| on irc.freenode.org for helping me with the
-buildTree function. Which was the most difficult function as I had to
-introduce my own state variable to use in the recursion.
+Thanks to |Jedai| on irc.freenode.org for helping me with the old
+buildTree function, in the first version. Which was the most difficult 
+function as I had to introduce my own state variable to use in the 
+recursion.
 
+Again thanks to #haskell, for beeing there while I learned parsec
